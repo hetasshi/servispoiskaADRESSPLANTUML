@@ -1,0 +1,76 @@
+@startuml
+
+actor Клиент
+participant "Сервис подсказок адресов" as AddressService
+participant "Сервис создания заказов" as OrderService
+participant "Сервис оплаты" as PaymentService
+participant "Сервис уведомлений" as NotificationService
+participant "Сервис поиска водителя" as DriverService
+
+== Выбор адресов ==
+Клиент -> AddressService: Ввод начальных символов адреса
+activate AddressService
+AddressService --> Клиент: Список подходящих адресов
+deactivate AddressService
+
+loop Для адресов "откуда" и "куда"
+    Клиент -> AddressService: Выбор конкретного адреса
+    activate AddressService
+    AddressService --> Клиент: Подтверждение выбора
+    deactivate AddressService
+end
+
+== Создание и оплата заказа ==
+Клиент -> OrderService: Формирование заказа\n(адреса, тариф, доп.услуги)
+activate OrderService
+
+OrderService -> PaymentService: Инициализация платежа
+activate PaymentService
+PaymentService --> OrderService: Ссылка для оплаты
+deactivate PaymentService
+
+OrderService --> Клиент: Запрос на оплату
+deactivate OrderService
+
+Клиент -> PaymentService: Подтверждение оплаты
+activate PaymentService
+PaymentService --> Клиент: Успешный статус оплаты
+PaymentService -> OrderService: Подтверждение оплаты
+deactivate PaymentService
+
+== Поиск водителя ==
+OrderService -> DriverService: Запрос на поиск водителя
+activate DriverService
+
+loop Поиск в зоне доступности
+    DriverService -> DriverService: Проверка ближайших водителей
+    DriverService --> OrderService: Текущий статус поиска
+end
+
+DriverService --> OrderService: Водитель назначен
+deactivate DriverService
+
+OrderService -> NotificationService: Уведомление о назначении
+activate NotificationService
+NotificationService --> Клиент: Информация о водителе
+deactivate NotificationService
+
+== Мониторинг подачи ==
+Клиент -> DriverService: Запрос на отслеживание
+activate DriverService
+
+loop До прибытия
+    DriverService --> Клиент: Обновление позиции водителя
+    DriverService --> Клиент: Расчетное время прибытия
+end
+
+DriverService --> Клиент: Водитель прибыл к точке подачи
+deactivate DriverService
+
+== Завершение процесса ==
+DriverService -> OrderService: Подтверждение прибытия
+activate OrderService
+OrderService --> Клиент: Заказ готов к выполнению
+deactivate OrderService
+
+@enduml
